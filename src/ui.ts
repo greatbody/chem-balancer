@@ -231,10 +231,12 @@ function drawBridges(
     const x1 = rRect.left + rRect.width / 2 - wrapRect.left;
     const x2 = pRect.left + pRect.width / 2 - wrapRect.left;
     const above = alternate === 0;
+    // Leave room for the valence badge sitting just above each element.
+    const valenceClearance = 14;
     const y = above
-      ? rRect.top - wrapRect.top - 4
+      ? rRect.top - wrapRect.top - valenceClearance
       : rRect.bottom - wrapRect.top + 4;
-    const peak = above ? y - 22 : y + 22;
+    const peak = above ? y - 24 : y + 24;
     const midX = (x1 + x2) / 2;
 
     // Path: M x1 y  L x1 peak  L x2 peak  L x2 y

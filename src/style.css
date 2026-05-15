@@ -191,26 +191,30 @@ button:hover {
   color: #d29922;
 }
 
-/* Element with valence label above it */
+/* Element with valence label above it.
+   Use position: relative + absolute so the badge floats above without
+   disturbing inline baseline / subscript flow. */
 .equation .el-with-valence {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  vertical-align: baseline;
-  line-height: 1;
-  margin: 0 1px;
+  position: relative;
+  display: inline;
 }
 
 .equation .el-with-valence .valence {
-  font-size: 0.55em;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, 2px);
+  font-size: 11px;
   color: #d29922;
   font-weight: 600;
   font-family: 'SF Mono', Menlo, Consolas, monospace;
-  margin-bottom: -2px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .equation .el-with-valence .el {
-  /* element symbol itself */
+  /* element symbol stays inline with everything else */
+  display: inline;
 }
 
 /* Double-line arrow with condition text above/below */
@@ -225,10 +229,11 @@ button:hover {
 
 .equation .arrow-double .arrow-top,
 .equation .arrow-double .arrow-bot {
-  font-size: 0.55em;
+  font-size: 12px;
   color: var(--muted);
   font-family: -apple-system, 'PingFang SC', sans-serif;
   min-height: 0.7em;
+  line-height: 1.2;
 }
 
 .equation .arrow-double .arrow-mid {
@@ -242,8 +247,8 @@ button:hover {
 }
 
 .eq-wrap.has-redox {
-  padding-top: 36px;
-  padding-bottom: 36px;
+  padding-top: 56px;
+  padding-bottom: 48px;
 }
 
 .bridge-overlay {
@@ -272,9 +277,9 @@ svg.bridges text.bridge-label.red {
 }
 
 .result.ok {
-  background: rgba(63, 185, 80, 0.1);
-  color: var(--ok);
-  border: 1px solid rgba(63, 185, 80, 0.3);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 .result.error {
