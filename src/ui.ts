@@ -1,14 +1,14 @@
 import { balance, type BalanceResult } from './balancer.js';
 import {
-  renderEquation,
   renderTokens,
   tokenizeFormula,
   type ValenceLabels,
 } from './formula-render.js';
 import { annotateReaction, markerSymbol } from './state-marker.js';
-import { analyzeRedox, type ElementChange } from './redox.js';
+import { analyzeRedox } from './redox.js';
 import { oxidationStates, formatOxidation } from './oxidation.js';
 import { inferCondition } from './conditions.js';
+import { paintEquation } from './canvas-renderer.js';
 
 export interface DemoExample {
   label: string;
@@ -155,33 +155,33 @@ export function renderResult(container: HTMLElement, outcome: TryBalanceOutcome)
 
   const condition = inferCondition(reactants, products);
 
-  // Outer wrapper holds the equation; bridges are positioned via JS.
+  // Canvas-rendered equation (precise positioning of valence labels and
+  // electron-transfer bridges).
   const wrap = document.createElement('div');
-  wrap.className = 'result ok eq-wrap';
-  if (redox.isRedox) wrap.classList.add('has-redox');
+  wrap.className = 'result ok canvas-wrap';
+  const canvas = document.createElement('canvas');
+  canvas.className = 'equation-canvas';
+  // Mark structural data on the wrapper so tests can assert without
+  // depending on the canvas pixel buffer.
+  wrap.dataset.species = String(reactants.length + products.length);
+  wrap.dataset.coefficients = coefficients.join(',');
+  wrap.dataset.markers = markers.join(',');
+  wrap.dataset.changes = String(redox.changes.length);
+  wrap.dataset.arrowTop = condition.top;
+  wrap.dataset.arrowBottom = condition.bottom;
+  wrap.appendChild(canvas);
+  container.appendChild(wrap);
 
-  const eq = document.createElement('div');
-  eq.className = 'equation-row';
-  renderEquation(eq, coefficients, reactants, products, {
-    arrow: '⟶',
-    productMarkers: markers,
+  paintEquation(canvas, {
+    coefficients,
+    reactants,
+    products,
     valences,
+    productMarkers: markers,
     arrowTop: condition.top,
     arrowBottom: condition.bottom,
+    changes: redox.changes,
   });
-  wrap.appendChild(eq);
-
-  // SVG overlay for redox bridges
-  if (redox.isRedox && redox.changes.length > 0) {
-    const overlay = document.createElement('div');
-    overlay.className = 'bridge-overlay';
-    wrap.appendChild(overlay);
-    container.appendChild(wrap);
-    // Draw bridges after layout
-    requestAnimationFrame(() => drawBridges(wrap, eq, overlay, redox.changes));
-  } else {
-    container.appendChild(wrap);
-  }
 
   const meta = document.createElement('div');
   meta.className = 'result-meta';
@@ -196,70 +196,6 @@ export function renderResult(container: HTMLElement, outcome: TryBalanceOutcome)
     meta.textContent += `  ${r}`;
   }
   container.appendChild(meta);
-}
-
-function drawBridges(
-  wrap: HTMLElement,
-  eq: HTMLElement,
-  overlay: HTMLElement,
-  changes: ElementChange[],
-): void {
-  overlay.innerHTML = '';
-  const wrapRect = wrap.getBoundingClientRect();
-  const speciesEls = Array.from(eq.querySelectorAll<HTMLElement>('.species'));
-  if (speciesEls.length === 0) return;
-
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('class', 'bridges');
-  svg.style.position = 'absolute';
-  svg.style.left = '0';
-  svg.style.top = '0';
-  svg.style.width = '100%';
-  svg.style.height = '100%';
-  svg.style.pointerEvents = 'none';
-  overlay.appendChild(svg);
-
-  let alternate = 0; // 0 = above, 1 = below
-  for (const c of changes) {
-    const rEl = speciesEls[c.reactantIdx];
-    const pEl = speciesEls[c.productIdx];
-    if (!rEl || !pEl) continue;
-    const rRect = rEl.getBoundingClientRect();
-    const pRect = pEl.getBoundingClientRect();
-
-    const x1 = rRect.left + rRect.width / 2 - wrapRect.left;
-    const x2 = pRect.left + pRect.width / 2 - wrapRect.left;
-    const above = alternate === 0;
-    // Leave room for the valence badge sitting just above each element.
-    const valenceClearance = 14;
-    const y = above
-      ? rRect.top - wrapRect.top - valenceClearance
-      : rRect.bottom - wrapRect.top + 4;
-    const peak = above ? y - 24 : y + 24;
-    const midX = (x1 + x2) / 2;
-
-    // Path: M x1 y  L x1 peak  L x2 peak  L x2 y
-    const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute(
-      'd',
-      `M ${x1} ${y} L ${x1} ${peak} L ${x2} ${peak} L ${x2} ${y}`,
-    );
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', c.kind === 'oxidation' ? '#d29922' : '#58a6ff');
-    path.setAttribute('stroke-width', '1.5');
-    svg.appendChild(path);
-
-    const text = document.createElementNS(svgNS, 'text');
-    text.setAttribute('x', String(midX));
-    text.setAttribute('y', String(above ? peak - 4 : peak + 14));
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('class', c.kind === 'oxidation' ? 'bridge-label ox' : 'bridge-label red');
-    text.textContent = `${c.kind === 'oxidation' ? '失' : '得'} ${c.electrons} e⁻`;
-    svg.appendChild(text);
-
-    alternate ^= 1;
-  }
 }
 
 export function bootstrap(root: ParentNode = document): void {

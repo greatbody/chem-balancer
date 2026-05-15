@@ -81,17 +81,15 @@ describe('renderResult', () => {
     container = document.createElement('div');
   });
 
-  it('renders ok result as structured equation with subscripts', () => {
+  it('renders ok result as a canvas wrapper carrying structural dataset', () => {
     renderResult(container, tryBalance('H2 + O2 -> H2O'));
-    const ok = container.querySelector('.result.ok')!;
-    const eq = ok.querySelector('.equation')!;
-    expect(eq).not.toBeNull();
-    // 2H2 + O2 ⟶ 2H2O => 3 species, 1 op, 1 arrow
-    expect(eq.querySelectorAll('.species').length).toBe(3);
-    expect(eq.querySelectorAll('.arrow').length).toBe(1);
-    expect(eq.querySelectorAll('.op').length).toBe(1);
-    expect(eq.querySelectorAll('.coef').length).toBe(2);
-    expect(eq.querySelectorAll('sub').length).toBe(3);
+    const ok = container.querySelector<HTMLElement>('.result.ok')!;
+    expect(ok.classList.contains('canvas-wrap')).toBe(true);
+    const canvas = ok.querySelector('canvas.equation-canvas');
+    expect(canvas).not.toBeNull();
+    expect(ok.dataset.species).toBe('3');
+    expect(ok.dataset.coefficients).toBe('2,1,2');
+    expect(ok.dataset.changes).toBe('2'); // H and O both change oxidation state
     expect(container.querySelector('.result-meta')?.textContent).toContain('2, 1, 2');
   });
 
@@ -118,18 +116,17 @@ describe('bootstrap', () => {
     demoBtn.click();
     const input = document.querySelector<HTMLInputElement>('#equation-input')!;
     expect(input.value).toBe(demoBtn.dataset.equation);
-    // Auto-balanced result should be present
-    expect(document.querySelector('#result-box .result.ok')).not.toBeNull();
+    expect(document.querySelector('#result-box .result.ok canvas')).not.toBeNull();
   });
 
-  it('clicking balance button shows structured result', () => {
+  it('clicking balance button shows canvas result', () => {
     bootstrap();
     const input = document.querySelector<HTMLInputElement>('#equation-input')!;
     input.value = 'H2 + O2 -> H2O';
     document.querySelector<HTMLButtonElement>('#balance-btn')!.click();
-    const ok = document.querySelector('.result.ok')!;
-    expect(ok.querySelectorAll('.species').length).toBe(3);
-    expect(ok.querySelectorAll('sub').length).toBe(3);
+    const ok = document.querySelector<HTMLElement>('.result.ok')!;
+    expect(ok.querySelector('canvas')).not.toBeNull();
+    expect(ok.dataset.coefficients).toBe('2,1,2');
   });
 
   it('pressing Enter in the input triggers balance', () => {
@@ -137,10 +134,8 @@ describe('bootstrap', () => {
     const input = document.querySelector<HTMLInputElement>('#equation-input')!;
     input.value = 'CH4 + O2 -> CO2 + H2O';
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    const ok = document.querySelector('.result.ok')!;
-    expect(ok.querySelectorAll('.species').length).toBe(4);
-    // CH4, 2O2, CO2, 2H2O — coefficient 2 appears twice
-    expect(ok.querySelectorAll('.coef').length).toBe(2);
+    const ok = document.querySelector<HTMLElement>('.result.ok')!;
+    expect(ok.dataset.coefficients).toBe('1,2,1,2');
   });
 
   it('empty input shows error', () => {
@@ -149,33 +144,42 @@ describe('bootstrap', () => {
     expect(document.querySelector('.result.error')?.textContent).toContain('请输入');
   });
 
-  it('CaCO3 + HCl reaction shows ↑ on CO2 product', () => {
+  it('CaCO3 + HCl reaction marks CO2 product as gas in dataset', () => {
     bootstrap();
     const input = document.querySelector<HTMLInputElement>('#equation-input')!;
     input.value = 'CaCO3 + HCl -> CaCl2 + H2O + CO2';
     document.querySelector<HTMLButtonElement>('#balance-btn')!.click();
-    const markers = document.querySelectorAll('.state-marker');
-    expect(markers.length).toBe(1);
-    expect(markers[0].textContent).toBe('↑');
+    const ok = document.querySelector<HTMLElement>('.result.ok')!;
+    expect(ok.dataset.markers).toBe(',,↑');
   });
 
-  it('Na2CO3 + CaCl2 reaction shows ↓ on CaCO3 product', () => {
+  it('Na2CO3 + CaCl2 reaction marks CaCO3 product as precipitate', () => {
     bootstrap();
     const input = document.querySelector<HTMLInputElement>('#equation-input')!;
     input.value = 'Na2CO3 + CaCl2 -> CaCO3 + NaCl';
     document.querySelector<HTMLButtonElement>('#balance-btn')!.click();
-    const markers = document.querySelectorAll('.state-marker');
-    expect(markers.length).toBe(1);
-    expect(markers[0].textContent).toBe('↓');
-    expect(markers[0].classList.contains('precipitate')).toBe(true);
+    const ok = document.querySelector<HTMLElement>('.result.ok')!;
+    expect(ok.dataset.markers).toBe('↓,');
   });
 
-  it('combustion of methane shows no markers (O2 reactant is gas)', () => {
+  it('combustion of methane has no markers and includes condition 点燃', () => {
     bootstrap();
     const input = document.querySelector<HTMLInputElement>('#equation-input')!;
     input.value = 'CH4 + O2 -> CO2 + H2O';
     document.querySelector<HTMLButtonElement>('#balance-btn')!.click();
-    expect(document.querySelectorAll('.state-marker').length).toBe(0);
+    const ok = document.querySelector<HTMLElement>('.result.ok')!;
+    expect(ok.dataset.markers).toBe(',');
+    expect(ok.dataset.arrowTop).toBe('点燃');
+  });
+
+  it('thermite has redox changes recorded in dataset', () => {
+    bootstrap();
+    const input = document.querySelector<HTMLInputElement>('#equation-input')!;
+    input.value = 'Al + Fe3O4 -> Fe + Al2O3';
+    document.querySelector<HTMLButtonElement>('#balance-btn')!.click();
+    const ok = document.querySelector<HTMLElement>('.result.ok')!;
+    expect(Number(ok.dataset.changes)).toBeGreaterThanOrEqual(2);
+    expect(ok.dataset.arrowTop).toBe('高温');
   });
 
   it('does nothing if root is missing required elements', () => {

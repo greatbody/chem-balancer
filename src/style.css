@@ -241,33 +241,15 @@ button:hover {
   color: var(--muted);
 }
 
-/* Result wrapper for redox bridge overlay */
-.eq-wrap {
-  position: relative;
+/* Result wrapper for canvas-rendered equation */
+.canvas-wrap {
+  padding: 8px;
+  overflow-x: auto;
 }
 
-.eq-wrap.has-redox {
-  padding-top: 56px;
-  padding-bottom: 48px;
-}
-
-.bridge-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-svg.bridges text.bridge-label {
-  font-size: 12px;
-  font-family: -apple-system, 'PingFang SC', sans-serif;
-}
-
-svg.bridges text.bridge-label.ox {
-  fill: #d29922;
-}
-
-svg.bridges text.bridge-label.red {
-  fill: #58a6ff;
+.equation-canvas {
+  display: block;
+  max-width: 100%;
 }
 
 .result {
