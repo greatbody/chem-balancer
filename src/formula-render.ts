@@ -137,15 +137,25 @@ export function renderTokens(parent: HTMLElement | DocumentFragment, tokens: Tok
 }
 
 /**
+ * Per-element oxidation labels for one species. Map: element symbol -> label
+ * string like "+3" or "+8/3". Element occurrence is matched by its position in
+ * tokenization order (so K1Mn1O4 labels Mn but not K/O if those aren't in the
+ * map).
+ */
+export type ValenceLabels = Map<string, string>;
+
+/**
  * Render one species with an optional integer coefficient as a <span>.
  * Coefficient 1 is omitted, like in textbooks. Optional state marker ('↑' or
- * '↓') is appended after the formula.
+ * '↓') is appended after the formula. Optional valenceLabels map adds a small
+ * "+N" badge above each matching element.
  */
 export function renderSpecies(
   parent: HTMLElement | DocumentFragment,
   coefficient: number,
   formula: string,
   marker: string = '',
+  valenceLabels: ValenceLabels = new Map(),
 ): void {
   const span = document.createElement('span');
   span.className = 'species';
@@ -155,7 +165,42 @@ export function renderSpecies(
     c.textContent = String(coefficient);
     span.appendChild(c);
   }
-  renderTokens(span, tokenizeFormula(formula));
+
+  const tokens = tokenizeFormula(formula);
+  // Render with per-element wrapping so we can attach valence badge.
+  for (const t of tokens) {
+    if (t.kind === 'text') {
+      // Could contain multiple consecutive symbols stitched together (e.g.
+      // "CuSO" from CuSO4). Split back into element symbols.
+      const elements = splitElementSymbols(t.value);
+      for (const el of elements) {
+        if (/^[A-Z][a-z]?$/.test(el) && valenceLabels.has(el)) {
+          const wrap = document.createElement('span');
+          wrap.className = 'el-with-valence';
+          const badge = document.createElement('span');
+          badge.className = 'valence';
+          badge.textContent = valenceLabels.get(el)!;
+          wrap.appendChild(badge);
+          const sym = document.createElement('span');
+          sym.className = 'el';
+          sym.textContent = el;
+          wrap.appendChild(sym);
+          span.appendChild(wrap);
+        } else {
+          span.appendChild(document.createTextNode(el));
+        }
+      }
+    } else if (t.kind === 'sub') {
+      const el = document.createElement('sub');
+      el.textContent = t.value;
+      span.appendChild(el);
+    } else if (t.kind === 'sup') {
+      const el = document.createElement('sup');
+      el.textContent = t.value;
+      span.appendChild(el);
+    }
+  }
+
   if (marker) {
     const m = document.createElement('span');
     m.className = `state-marker ${marker === '↑' ? 'gas' : 'precipitate'}`;
@@ -165,20 +210,61 @@ export function renderSpecies(
   parent.appendChild(span);
 }
 
+/** Split "CuSO" -> ["Cu", "S", "O"], "Fe" -> ["Fe"], "(" -> ["("]. */
+function splitElementSymbols(s: string): string[] {
+  const out: string[] = [];
+  let i = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if (/[A-Z]/.test(c)) {
+      let sym = c;
+      i++;
+      while (i < s.length && /[a-z]/.test(s[i])) {
+        sym += s[i];
+        i++;
+      }
+      out.push(sym);
+    } else {
+      out.push(c);
+      i++;
+    }
+  }
+  return out;
+}
+
+export interface EquationRenderOptions {
+  arrow?: string;
+  productMarkers?: string[];
+  /** Same length as reactants+products, each entry is valence labels map. */
+  valences?: ValenceLabels[];
+  /** Top text of the arrow (e.g. "点燃"). */
+  arrowTop?: string;
+  /** Bottom text of the arrow (e.g. "催化剂"). */
+  arrowBottom?: string;
+}
+
 /**
- * Render a full balanced equation:  c1·F1 + c2·F2 = c3·F3 + ...
- * Optional productMarkers array (same length as products) places '↑' or '↓'
- * after each product.
+ * Render a full balanced equation with optional arrow text and per-species
+ * valence overlays. The element-bridge over/under-lines are drawn separately
+ * by the caller (SVG overlay) since they need actual layout positions.
  */
 export function renderEquation(
   parent: HTMLElement,
   coefficients: number[],
   reactants: string[],
   products: string[],
-  arrow: string = '=',
-  productMarkers: string[] = [],
+  options: EquationRenderOptions = {},
 ): void {
+  const {
+    arrow = '⟶',
+    productMarkers = [],
+    valences = [],
+    arrowTop = '',
+    arrowBottom = '',
+  } = options;
+
   parent.classList.add('equation');
+
   reactants.forEach((f, idx) => {
     if (idx > 0) {
       const plus = document.createElement('span');
@@ -186,12 +272,29 @@ export function renderEquation(
       plus.textContent = '+';
       parent.appendChild(plus);
     }
-    renderSpecies(parent, coefficients[idx], f);
+    renderSpecies(parent, coefficients[idx], f, '', valences[idx]);
   });
+
   const ar = document.createElement('span');
-  ar.className = 'arrow';
-  ar.textContent = arrow;
+  ar.className = arrowTop || arrowBottom ? 'arrow arrow-double' : 'arrow';
+  if (arrowTop || arrowBottom) {
+    const top = document.createElement('span');
+    top.className = 'arrow-top';
+    top.textContent = arrowTop;
+    const mid = document.createElement('span');
+    mid.className = 'arrow-mid';
+    mid.textContent = '═══';
+    const bot = document.createElement('span');
+    bot.className = 'arrow-bot';
+    bot.textContent = arrowBottom;
+    ar.appendChild(top);
+    ar.appendChild(mid);
+    ar.appendChild(bot);
+  } else {
+    ar.textContent = arrow;
+  }
   parent.appendChild(ar);
+
   products.forEach((f, idx) => {
     if (idx > 0) {
       const plus = document.createElement('span');
@@ -199,11 +302,13 @@ export function renderEquation(
       plus.textContent = '+';
       parent.appendChild(plus);
     }
+    const absIdx = reactants.length + idx;
     renderSpecies(
       parent,
-      coefficients[reactants.length + idx],
+      coefficients[absIdx],
       f,
       productMarkers[idx] ?? '',
+      valences[absIdx],
     );
   });
 }

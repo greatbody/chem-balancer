@@ -191,6 +191,80 @@ button:hover {
   color: #d29922;
 }
 
+/* Element with valence label above it */
+.equation .el-with-valence {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: baseline;
+  line-height: 1;
+  margin: 0 1px;
+}
+
+.equation .el-with-valence .valence {
+  font-size: 0.55em;
+  color: #d29922;
+  font-weight: 600;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  margin-bottom: -2px;
+}
+
+.equation .el-with-valence .el {
+  /* element symbol itself */
+}
+
+/* Double-line arrow with condition text above/below */
+.equation .arrow-double {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 12px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.equation .arrow-double .arrow-top,
+.equation .arrow-double .arrow-bot {
+  font-size: 0.55em;
+  color: var(--muted);
+  font-family: -apple-system, 'PingFang SC', sans-serif;
+  min-height: 0.7em;
+}
+
+.equation .arrow-double .arrow-mid {
+  letter-spacing: -2px;
+  color: var(--muted);
+}
+
+/* Result wrapper for redox bridge overlay */
+.eq-wrap {
+  position: relative;
+}
+
+.eq-wrap.has-redox {
+  padding-top: 36px;
+  padding-bottom: 36px;
+}
+
+.bridge-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+svg.bridges text.bridge-label {
+  font-size: 12px;
+  font-family: -apple-system, 'PingFang SC', sans-serif;
+}
+
+svg.bridges text.bridge-label.ox {
+  fill: #d29922;
+}
+
+svg.bridges text.bridge-label.red {
+  fill: #58a6ff;
+}
+
 .result {
   padding: 12px 14px;
   border-radius: 6px;

@@ -139,7 +139,7 @@ describe('renderSpecies', () => {
 describe('renderEquation', () => {
   it('renders full equation with arrow and operators', () => {
     const div = document.createElement('div');
-    renderEquation(div, [2, 1, 2], ['H2', 'O2'], ['H2O'], '⟶');
+    renderEquation(div, [2, 1, 2], ['H2', 'O2'], ['H2O'], { arrow: '⟶' });
     // Three species
     expect(div.querySelectorAll('.species').length).toBe(3);
     // 1 '+' on left, 0 on right => 1 op
@@ -163,8 +163,7 @@ describe('renderEquation', () => {
       [1, 2, 1, 1, 1],
       ['CaCO3', 'HCl'],
       ['CaCl2', 'H2O', 'CO2'],
-      '⟶',
-      ['', '', '↑'],
+      { arrow: '⟶', productMarkers: ['', '', '↑'] },
     );
     const markers = div.querySelectorAll('.state-marker');
     expect(markers.length).toBe(1);
@@ -179,8 +178,7 @@ describe('renderEquation', () => {
       [1, 1, 1, 2],
       ['Na2CO3', 'CaCl2'],
       ['CaCO3', 'NaCl'],
-      '⟶',
-      ['↓', ''],
+      { arrow: '⟶', productMarkers: ['↓', ''] },
     );
     const m = div.querySelector('.state-marker')!;
     expect(m.textContent).toBe('↓');
@@ -194,5 +192,28 @@ describe('renderEquation', () => {
     const lastChild = species.lastChild as HTMLElement;
     expect(lastChild.tagName.toLowerCase()).toBe('span');
     expect(lastChild.textContent).toBe('↑');
+  });
+
+  it('renders arrow with top and bottom condition labels (double arrow)', () => {
+    const div = document.createElement('div');
+    renderEquation(div, [1, 2, 1, 2], ['CH4', 'O2'], ['CO2', 'H2O'], {
+      arrowTop: '点燃',
+      arrowBottom: '',
+    });
+    const ar = div.querySelector('.arrow')!;
+    expect(ar.classList.contains('arrow-double')).toBe(true);
+    expect(ar.querySelector('.arrow-top')!.textContent).toBe('点燃');
+  });
+
+  it('renders valence badges over named elements', () => {
+    const div = document.createElement('div');
+    const v = new Map<string, string>([['Fe', '+3']]);
+    renderEquation(div, [1], ['Fe2O3'], ['Fe2O3'], {
+      valences: [v, new Map()],
+    });
+    const badges = div.querySelectorAll('.valence');
+    // First species "Fe2O3" should have Fe wrapped with a valence badge.
+    expect(badges.length).toBeGreaterThanOrEqual(1);
+    expect(badges[0].textContent).toBe('+3');
   });
 });
