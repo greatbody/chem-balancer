@@ -1,0 +1,22 @@
+{
+  "name": "chem-balancer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy": "wrangler pages deploy dist --project-name=chem-balancer"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4",
+    "jsdom": "^25.0.1",
+    "@vitest/coverage-v8": "^2.1.4",
+    "wrangler": "^3.84.0"
+  }
+}

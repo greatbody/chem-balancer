@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>化学方程式配平 · Chem Balancer</title>
+    <meta name="description" content="在线化学方程式配平工具，支持复杂括号与多原子离子。" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>化学方程式配平</h1>
+      <p class="subtitle">输入未配平的化学方程式，例如 <code>CH4 + O2 -&gt; CO2 + H2O</code>。支持 <code>=</code>、<code>-&gt;</code>、<code>→</code> 作为反应箭头。</p>
+
+      <div class="panel">
+        <h2>方程式</h2>
+        <div class="input-row">
+          <input
+            id="equation-input"
+            type="text"
+            placeholder="例如：H2 + O2 -> H2O"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button id="balance-btn" type="button">配平</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>试试这些示例（点击填入）</h2>
+        <div id="demo-box" class="demos"></div>
+      </div>
+
+      <div class="panel">
+        <h2>结果</h2>
+        <div id="result-box">
+          <div class="result-meta">点击上方示例或输入方程式后按"配平"。</div>
+        </div>
+      </div>
+
+      <footer>
+        <a href="https://github.com/greatbody/chem-balancer" target="_blank" rel="noopener">Source on GitHub</a>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
