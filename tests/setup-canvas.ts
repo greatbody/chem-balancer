@@ -7,6 +7,7 @@ interface MinimalCtx {
   fillStyle: string;
   strokeStyle: string;
   lineWidth: number;
+  lineCap: CanvasLineCap;
   textAlign: CanvasTextAlign;
   textBaseline: CanvasTextBaseline;
   measureText(text: string): { width: number };
@@ -14,9 +15,11 @@ interface MinimalCtx {
   clearRect(x: number, y: number, w: number, h: number): void;
   setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void;
   beginPath(): void;
+  closePath(): void;
   moveTo(x: number, y: number): void;
   lineTo(x: number, y: number): void;
   stroke(): void;
+  fill(): void;
 }
 
 function makeCtx(): MinimalCtx {
@@ -25,19 +28,21 @@ function makeCtx(): MinimalCtx {
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
+    lineCap: 'butt',
     textAlign: 'start',
     textBaseline: 'alphabetic',
     measureText(text: string) {
-      // Approximate: 8px per character for monospace layout in tests.
       return { width: text.length * 8 };
     },
     fillText() {},
     clearRect() {},
     setTransform() {},
     beginPath() {},
+    closePath() {},
     moveTo() {},
     lineTo() {},
     stroke() {},
+    fill() {},
   };
 }
 

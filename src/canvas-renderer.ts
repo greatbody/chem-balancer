@@ -69,7 +69,7 @@ const COLORS = {
 
 // Vertical layout (CSS px). Y origin = top of canvas.
 const PADDING_X = 24;
-const TOP_GUTTER_REDOX = 60;     // space for upper bridge + label
+const TOP_GUTTER_REDOX = 76;     // space for upper bridge + label
 const TOP_GUTTER_NORMAL = 16;
 const VALENCE_LIFT = 22;          // distance from baseline to valence baseline
 const BASELINE_FROM_TOP_OFFSET = 28; // distance from top of equation row to baseline
@@ -375,24 +375,32 @@ function makeArrowSegment(
       const startX = cx - arrowW / 2;
       const endX = cx + arrowW / 2;
 
-      // Double horizontal lines centered on baseline midline (~ y - 8)
+      // Double horizontal lines centered on baseline midline (~ y - 8).
+      // Stop the lines slightly before the tip so the arrowhead triangle
+      // can sit cleanly at the end without leaving an unclosed gap.
       const lineMidY = y - 8;
+      const arrowHeadLen = 8;
+      const arrowHeadHalfW = 5;
+      const lineEndX = endX - arrowHeadLen + 1;
+
       c.strokeStyle = COLORS.muted;
       c.lineWidth = 1.2;
+      c.lineCap = 'butt';
       c.beginPath();
       c.moveTo(startX, lineMidY - 3);
-      c.lineTo(endX, lineMidY - 3);
+      c.lineTo(lineEndX, lineMidY - 3);
       c.moveTo(startX, lineMidY + 3);
-      c.lineTo(endX, lineMidY + 3);
+      c.lineTo(lineEndX, lineMidY + 3);
       c.stroke();
 
-      // Arrowhead at end
+      // Solid filled arrowhead — guarantees a closed shape.
+      c.fillStyle = COLORS.muted;
       c.beginPath();
       c.moveTo(endX, lineMidY);
-      c.lineTo(endX - 6, lineMidY - 4);
-      c.moveTo(endX, lineMidY);
-      c.lineTo(endX - 6, lineMidY + 4);
-      c.stroke();
+      c.lineTo(endX - arrowHeadLen, lineMidY - arrowHeadHalfW);
+      c.lineTo(endX - arrowHeadLen, lineMidY + arrowHeadHalfW);
+      c.closePath();
+      c.fill();
 
       // Top label
       if (top) {
@@ -451,10 +459,13 @@ function drawBridges(
   for (const a of anchors) anchorMap.set(`${a.speciesIdx}:${a.element}`, a);
 
   let alternate = 0; // 0 = above, 1 = below
-  const above0Y = layout.baselineY - 32;       // line for valence sits at baselineY - VALENCE_LIFT (= -22), bridge sits a bit above that
-  const above1Y = layout.baselineY - 50;       // higher row when two upper bridges
-  const below0Y = layout.baselineY + 18;
-  const below1Y = layout.baselineY + 38;
+  // Valence label sits at (baselineY - VALENCE_LIFT) on its alphabetic
+  // baseline; its glyph top is roughly baselineY - 30. Place the upper
+  // bracket well above that so the label "失 N e⁻" has clear breathing room.
+  const above0Y = layout.baselineY - 48;
+  const above1Y = layout.baselineY - 64;
+  const below0Y = layout.baselineY + 20;
+  const below1Y = layout.baselineY + 40;
   let upperUsed = 0;
   let lowerUsed = 0;
 
@@ -471,10 +482,12 @@ function drawBridges(
       : lowerUsed === 0 ? below0Y : below1Y;
     if (above) upperUsed++; else lowerUsed++;
 
-    // Vertical "drop legs" go from element top/bottom inward to bracket
-    const legStartA = above ? a.baselineY - 26 : a.baselineY + 6;
-    const legStartB = above ? b.baselineY - 26 : b.baselineY + 6;
-    const peakY = above ? bracketY - 4 : bracketY + 4;
+    // Vertical "drop legs" go from element top/bottom inward to bracket.
+    // Stop just above the valence label (which lives at baselineY - 30..-22)
+    // so the bracket leg doesn't overlap the "+8/3" / "+3" text.
+    const legStartA = above ? a.baselineY - 36 : a.baselineY + 8;
+    const legStartB = above ? b.baselineY - 36 : b.baselineY + 8;
+    const peakY = above ? bracketY : bracketY;
 
     const color = c.kind === 'oxidation' ? COLORS.ox : COLORS.red;
     ctx.strokeStyle = color;
