@@ -138,12 +138,14 @@ export function renderTokens(parent: HTMLElement | DocumentFragment, tokens: Tok
 
 /**
  * Render one species with an optional integer coefficient as a <span>.
- * Coefficient 1 is omitted, like in textbooks.
+ * Coefficient 1 is omitted, like in textbooks. Optional state marker ('↑' or
+ * '↓') is appended after the formula.
  */
 export function renderSpecies(
   parent: HTMLElement | DocumentFragment,
   coefficient: number,
   formula: string,
+  marker: string = '',
 ): void {
   const span = document.createElement('span');
   span.className = 'species';
@@ -154,11 +156,19 @@ export function renderSpecies(
     span.appendChild(c);
   }
   renderTokens(span, tokenizeFormula(formula));
+  if (marker) {
+    const m = document.createElement('span');
+    m.className = `state-marker ${marker === '↑' ? 'gas' : 'precipitate'}`;
+    m.textContent = marker;
+    span.appendChild(m);
+  }
   parent.appendChild(span);
 }
 
 /**
  * Render a full balanced equation:  c1·F1 + c2·F2 = c3·F3 + ...
+ * Optional productMarkers array (same length as products) places '↑' or '↓'
+ * after each product.
  */
 export function renderEquation(
   parent: HTMLElement,
@@ -166,23 +176,34 @@ export function renderEquation(
   reactants: string[],
   products: string[],
   arrow: string = '=',
+  productMarkers: string[] = [],
 ): void {
   parent.classList.add('equation');
-  const renderSide = (formulas: string[], offset: number): void => {
-    formulas.forEach((f, idx) => {
-      if (idx > 0) {
-        const plus = document.createElement('span');
-        plus.className = 'op';
-        plus.textContent = '+';
-        parent.appendChild(plus);
-      }
-      renderSpecies(parent, coefficients[offset + idx], f);
-    });
-  };
-  renderSide(reactants, 0);
+  reactants.forEach((f, idx) => {
+    if (idx > 0) {
+      const plus = document.createElement('span');
+      plus.className = 'op';
+      plus.textContent = '+';
+      parent.appendChild(plus);
+    }
+    renderSpecies(parent, coefficients[idx], f);
+  });
   const ar = document.createElement('span');
   ar.className = 'arrow';
   ar.textContent = arrow;
   parent.appendChild(ar);
-  renderSide(products, reactants.length);
+  products.forEach((f, idx) => {
+    if (idx > 0) {
+      const plus = document.createElement('span');
+      plus.className = 'op';
+      plus.textContent = '+';
+      parent.appendChild(plus);
+    }
+    renderSpecies(
+      parent,
+      coefficients[reactants.length + idx],
+      f,
+      productMarkers[idx] ?? '',
+    );
+  });
 }

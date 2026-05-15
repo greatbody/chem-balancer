@@ -155,4 +155,44 @@ describe('renderEquation', () => {
     renderEquation(div, [1, 1], ['H2O'], ['H2O']);
     expect(div.classList.contains('equation')).toBe(true);
   });
+
+  it('renders product markers ↑ and ↓ on the right products only', () => {
+    const div = document.createElement('div');
+    renderEquation(
+      div,
+      [1, 2, 1, 1, 1],
+      ['CaCO3', 'HCl'],
+      ['CaCl2', 'H2O', 'CO2'],
+      '⟶',
+      ['', '', '↑'],
+    );
+    const markers = div.querySelectorAll('.state-marker');
+    expect(markers.length).toBe(1);
+    expect(markers[0].textContent).toBe('↑');
+    expect(markers[0].classList.contains('gas')).toBe(true);
+  });
+
+  it('precipitate marker gets .precipitate class', () => {
+    const div = document.createElement('div');
+    renderEquation(
+      div,
+      [1, 1, 1, 2],
+      ['Na2CO3', 'CaCl2'],
+      ['CaCO3', 'NaCl'],
+      '⟶',
+      ['↓', ''],
+    );
+    const m = div.querySelector('.state-marker')!;
+    expect(m.textContent).toBe('↓');
+    expect(m.classList.contains('precipitate')).toBe(true);
+  });
+
+  it('renderSpecies appends marker after subscripts', () => {
+    const div = document.createElement('div');
+    renderSpecies(div, 2, 'H2O', '↑');
+    const species = div.querySelector('.species')!;
+    const lastChild = species.lastChild as HTMLElement;
+    expect(lastChild.tagName.toLowerCase()).toBe('span');
+    expect(lastChild.textContent).toBe('↑');
+  });
 });

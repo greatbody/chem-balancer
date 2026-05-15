@@ -149,6 +149,35 @@ describe('bootstrap', () => {
     expect(document.querySelector('.result.error')?.textContent).toContain('请输入');
   });
 
+  it('CaCO3 + HCl reaction shows ↑ on CO2 product', () => {
+    bootstrap();
+    const input = document.querySelector<HTMLInputElement>('#equation-input')!;
+    input.value = 'CaCO3 + HCl -> CaCl2 + H2O + CO2';
+    document.querySelector<HTMLButtonElement>('#balance-btn')!.click();
+    const markers = document.querySelectorAll('.state-marker');
+    expect(markers.length).toBe(1);
+    expect(markers[0].textContent).toBe('↑');
+  });
+
+  it('Na2CO3 + CaCl2 reaction shows ↓ on CaCO3 product', () => {
+    bootstrap();
+    const input = document.querySelector<HTMLInputElement>('#equation-input')!;
+    input.value = 'Na2CO3 + CaCl2 -> CaCO3 + NaCl';
+    document.querySelector<HTMLButtonElement>('#balance-btn')!.click();
+    const markers = document.querySelectorAll('.state-marker');
+    expect(markers.length).toBe(1);
+    expect(markers[0].textContent).toBe('↓');
+    expect(markers[0].classList.contains('precipitate')).toBe(true);
+  });
+
+  it('combustion of methane shows no markers (O2 reactant is gas)', () => {
+    bootstrap();
+    const input = document.querySelector<HTMLInputElement>('#equation-input')!;
+    input.value = 'CH4 + O2 -> CO2 + H2O';
+    document.querySelector<HTMLButtonElement>('#balance-btn')!.click();
+    expect(document.querySelectorAll('.state-marker').length).toBe(0);
+  });
+
   it('does nothing if root is missing required elements', () => {
     document.body.innerHTML = '';
     expect(() => bootstrap()).not.toThrow();

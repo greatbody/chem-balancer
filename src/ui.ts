@@ -1,5 +1,6 @@
 import { balance, type BalanceResult } from './balancer.js';
 import { renderEquation, renderTokens, tokenizeFormula } from './formula-render.js';
+import { annotateReaction, markerSymbol } from './state-marker.js';
 
 export interface DemoExample {
   label: string;
@@ -14,6 +15,9 @@ export const DEMO_EXAMPLES: DemoExample[] = [
   { label: '硫酸铝复分解', equation: 'Al + Fe2(SO4)3 -> Al2(SO4)3 + Fe' },
   { label: '高锰酸钾分解', equation: 'KMnO4 -> K2MnO4 + MnO2 + O2' },
   { label: '辛烷燃烧', equation: 'C8H18 + O2 -> CO2 + H2O' },
+  { label: '碳酸钙沉淀', equation: 'Na2CO3 + CaCl2 -> CaCO3 + NaCl' },
+  { label: '盐酸大理石', equation: 'CaCO3 + HCl -> CaCl2 + H2O + CO2' },
+  { label: '硫酸钡沉淀', equation: 'BaCl2 + H2SO4 -> BaSO4 + HCl' },
 ];
 
 export interface TryBalanceOutcome {
@@ -110,12 +114,18 @@ export function renderResult(container: HTMLElement, outcome: TryBalanceOutcome)
   if (outcome.ok && outcome.result) {
     const eq = document.createElement('div');
     eq.className = 'result ok';
+    const ann = annotateReaction(
+      outcome.result.reactants,
+      outcome.result.products,
+    );
+    const markerStrings = ann.productMarkers.map(markerSymbol);
     renderEquation(
       eq,
       outcome.result.coefficients,
       outcome.result.reactants,
       outcome.result.products,
       '⟶',
+      markerStrings,
     );
     container.appendChild(eq);
 

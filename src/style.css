@@ -177,6 +177,20 @@ button:hover {
   line-height: 0;
 }
 
+.equation .state-marker {
+  font-size: 0.85em;
+  margin-left: 1px;
+  font-weight: 600;
+}
+
+.equation .state-marker.gas {
+  color: #58a6ff;
+}
+
+.equation .state-marker.precipitate {
+  color: #d29922;
+}
+
 .result {
   padding: 12px 14px;
   border-radius: 6px;
