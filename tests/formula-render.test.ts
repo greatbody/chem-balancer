@@ -1,0 +1,158 @@
+import { describe, it, expect } from 'vitest';
+import {
+  tokenizeFormula,
+  renderTokens,
+  renderSpecies,
+  renderEquation,
+  type Token,
+} from '../src/formula-render';
+
+describe('tokenizeFormula', () => {
+  it('simple H2O', () => {
+    expect(tokenizeFormula('H2O')).toEqual<Token[]>([
+      { kind: 'text', value: 'H' },
+      { kind: 'sub', value: '2' },
+      { kind: 'text', value: 'O' },
+    ]);
+  });
+  it('multi-letter element', () => {
+    expect(tokenizeFormula('NaCl')).toEqual<Token[]>([
+      { kind: 'text', value: 'NaCl' },
+    ]);
+  });
+  it('with parentheses keeps brackets as text', () => {
+    expect(tokenizeFormula('Ca(OH)2')).toEqual<Token[]>([
+      { kind: 'text', value: 'Ca(OH)' },
+      { kind: 'sub', value: '2' },
+    ]);
+  });
+  it('nested bracket', () => {
+    const toks = tokenizeFormula('K3[Fe(CN)6]');
+    // Just sanity check the subscripts come through.
+    const subs = toks.filter((t) => t.kind === 'sub').map((t) => t.value);
+    expect(subs).toEqual(['3', '6']);
+  });
+  it('explicit caret charge SO4^2-', () => {
+    expect(tokenizeFormula('SO4^2-')).toEqual<Token[]>([
+      { kind: 'text', value: 'SO' },
+      { kind: 'sub', value: '4' },
+      { kind: 'sup', value: '2-' },
+    ]);
+  });
+  it('explicit caret charge Fe^3+', () => {
+    expect(tokenizeFormula('Fe^3+')).toEqual<Token[]>([
+      { kind: 'text', value: 'Fe' },
+      { kind: 'sup', value: '3+' },
+    ]);
+  });
+  it('trailing charge "Na+"', () => {
+    expect(tokenizeFormula('Na+')).toEqual<Token[]>([
+      { kind: 'text', value: 'Na' },
+      { kind: 'sup', value: '+' },
+    ]);
+  });
+  it('trailing charge "Cl-"', () => {
+    expect(tokenizeFormula('Cl-')).toEqual<Token[]>([
+      { kind: 'text', value: 'Cl' },
+      { kind: 'sup', value: '-' },
+    ]);
+  });
+  it('digit followed by + at end becomes superscript (Fe2+ style)', () => {
+    expect(tokenizeFormula('Fe2+')).toEqual<Token[]>([
+      { kind: 'text', value: 'Fe' },
+      { kind: 'sup', value: '2+' },
+    ]);
+  });
+  it('middle digit stays subscript even if formula ends with + ambiguity', () => {
+    // C6H12O6 has no trailing sign — all digits are subscripts.
+    const toks = tokenizeFormula('C6H12O6');
+    expect(toks.filter((t) => t.kind === 'sub').map((t) => t.value)).toEqual([
+      '6',
+      '12',
+      '6',
+    ]);
+    expect(toks.filter((t) => t.kind === 'sup')).toEqual([]);
+  });
+  it('hydrate dot CuSO4·5H2O', () => {
+    const toks = tokenizeFormula('CuSO4·5H2O');
+    // First text "CuSO", sub 4, text "·", sub 5, text "H", sub 2, text "O"
+    expect(toks.map((t) => `${t.kind}:${t.value}`)).toEqual([
+      'text:CuSO',
+      'sub:4',
+      'text:·',
+      'sub:5',
+      'text:H',
+      'sub:2',
+      'text:O',
+    ]);
+  });
+  it('asterisk normalized to dot', () => {
+    const toks = tokenizeFormula('CuSO4*5H2O');
+    expect(toks.some((t) => t.kind === 'text' && t.value.includes('·'))).toBe(true);
+  });
+  it('whitespace tolerated', () => {
+    expect(tokenizeFormula('  H2O  ')).toEqual(tokenizeFormula('H2O'));
+  });
+});
+
+describe('renderTokens', () => {
+  it('renders sub and sup as <sub>/<sup>', () => {
+    const div = document.createElement('div');
+    renderTokens(div, [
+      { kind: 'text', value: 'H' },
+      { kind: 'sub', value: '2' },
+      { kind: 'text', value: 'O' },
+    ]);
+    expect(div.querySelectorAll('sub').length).toBe(1);
+    expect(div.querySelector('sub')!.textContent).toBe('2');
+    expect(div.textContent).toBe('H2O');
+  });
+
+  it('renders sup', () => {
+    const div = document.createElement('div');
+    renderTokens(div, [
+      { kind: 'text', value: 'Fe' },
+      { kind: 'sup', value: '3+' },
+    ]);
+    expect(div.querySelector('sup')!.textContent).toBe('3+');
+  });
+});
+
+describe('renderSpecies', () => {
+  it('omits coefficient 1', () => {
+    const div = document.createElement('div');
+    renderSpecies(div, 1, 'H2O');
+    expect(div.querySelector('.coef')).toBeNull();
+    expect(div.querySelector('.species')!.textContent).toBe('H2O');
+  });
+
+  it('shows coefficient >1 with .coef class', () => {
+    const div = document.createElement('div');
+    renderSpecies(div, 2, 'H2O');
+    const coef = div.querySelector('.coef')!;
+    expect(coef.textContent).toBe('2');
+    expect(div.querySelector('.species')!.textContent).toBe('2H2O');
+    expect(div.querySelector('sub')!.textContent).toBe('2');
+  });
+});
+
+describe('renderEquation', () => {
+  it('renders full equation with arrow and operators', () => {
+    const div = document.createElement('div');
+    renderEquation(div, [2, 1, 2], ['H2', 'O2'], ['H2O'], '⟶');
+    // Three species
+    expect(div.querySelectorAll('.species').length).toBe(3);
+    // 1 '+' on left, 0 on right => 1 op
+    expect(div.querySelectorAll('.arrow').length).toBe(1);
+    expect(div.querySelectorAll('.op').length).toBe(1);
+    expect(div.querySelector('.arrow')!.textContent).toBe('⟶');
+    // Subscripts present on H2, O2, H2O => 3 sub elements
+    expect(div.querySelectorAll('sub').length).toBe(3);
+  });
+
+  it('adds the .equation class to the host element', () => {
+    const div = document.createElement('div');
+    renderEquation(div, [1, 1], ['H2O'], ['H2O']);
+    expect(div.classList.contains('equation')).toBe(true);
+  });
+});

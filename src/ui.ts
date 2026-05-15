@@ -1,4 +1,5 @@
 import { balance, type BalanceResult } from './balancer.js';
+import { renderEquation, renderTokens, tokenizeFormula } from './formula-render.js';
 
 export interface DemoExample {
   label: string;
@@ -12,6 +13,7 @@ export const DEMO_EXAMPLES: DemoExample[] = [
   { label: '中和反应', equation: 'Ca(OH)2 + HCl -> CaCl2 + H2O' },
   { label: '硫酸铝复分解', equation: 'Al + Fe2(SO4)3 -> Al2(SO4)3 + Fe' },
   { label: '高锰酸钾分解', equation: 'KMnO4 -> K2MnO4 + MnO2 + O2' },
+  { label: '辛烷燃烧', equation: 'C8H18 + O2 -> CO2 + H2O' },
 ];
 
 export interface TryBalanceOutcome {
@@ -29,6 +31,11 @@ export function tryBalance(input: string): TryBalanceOutcome {
   }
 }
 
+/**
+ * Render demo buttons. The button label is the Chinese name; under it we show
+ * the formatted equation with subscripts so users see what a valid input looks
+ * like.
+ */
 export function renderDemoButtons(
   container: HTMLElement,
   examples: DemoExample[],
@@ -39,21 +46,78 @@ export function renderDemoButtons(
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'demo-btn';
-    btn.textContent = ex.label;
-    btn.title = ex.equation;
     btn.dataset.equation = ex.equation;
+
+    const label = document.createElement('span');
+    label.className = 'demo-label';
+    label.textContent = ex.label;
+    btn.appendChild(label);
+
+    const preview = document.createElement('span');
+    preview.className = 'demo-preview equation';
+    renderEquationPreview(preview, ex.equation);
+    btn.appendChild(preview);
+
     btn.addEventListener('click', () => onPick(ex.equation));
     container.appendChild(btn);
   }
 }
 
+/**
+ * Render a possibly-unbalanced equation string with subscripts. Falls back to
+ * plain text if parsing fails.
+ */
+function renderEquationPreview(parent: HTMLElement, eq: string): void {
+  // Split on the arrow first.
+  const arrowMatch = eq.match(/->|=>|=|→/);
+  if (!arrowMatch) {
+    parent.textContent = eq;
+    return;
+  }
+  const idx = arrowMatch.index!;
+  const left = eq.slice(0, idx);
+  const right = eq.slice(idx + arrowMatch[0].length);
+
+  const renderSide = (side: string): void => {
+    const parts = side
+      .split('+')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    parts.forEach((p, i) => {
+      if (i > 0) {
+        const plus = document.createElement('span');
+        plus.className = 'op';
+        plus.textContent = '+';
+        parent.appendChild(plus);
+      }
+      const sp = document.createElement('span');
+      sp.className = 'species';
+      renderTokens(sp, tokenizeFormula(p));
+      parent.appendChild(sp);
+    });
+  };
+
+  renderSide(left);
+  const ar = document.createElement('span');
+  ar.className = 'arrow';
+  ar.textContent = '⟶';
+  parent.appendChild(ar);
+  renderSide(right);
+}
+
 export function renderResult(container: HTMLElement, outcome: TryBalanceOutcome): void {
   container.innerHTML = '';
   if (outcome.ok && outcome.result) {
-    const ok = document.createElement('div');
-    ok.className = 'result ok';
-    ok.textContent = outcome.result.formatted;
-    container.appendChild(ok);
+    const eq = document.createElement('div');
+    eq.className = 'result ok';
+    renderEquation(
+      eq,
+      outcome.result.coefficients,
+      outcome.result.reactants,
+      outcome.result.products,
+      '⟶',
+    );
+    container.appendChild(eq);
 
     const meta = document.createElement('div');
     meta.className = 'result-meta';

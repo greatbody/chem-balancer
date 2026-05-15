@@ -108,22 +108,79 @@ button:hover {
 }
 
 .demos {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 8px;
 }
 
 .demo-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.demo-label {
   font-size: 13px;
-  padding: 6px 12px;
+  color: var(--muted);
+}
+
+.demo-preview {
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---------- equation rendering (sub/sup, coefficient, arrow) ---------- */
+
+.equation {
+  font-family: 'Times New Roman', 'Songti SC', 'SimSun', serif;
+  font-size: 22px;
+  line-height: 1.6;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0;
+}
+
+.equation .species {
+  white-space: nowrap;
+}
+
+.equation .coef {
+  font-weight: 600;
+  margin-right: 1px;
+}
+
+.equation .op {
+  margin: 0 8px;
+  color: var(--muted);
+}
+
+.equation .arrow {
+  margin: 0 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.equation sub {
+  font-size: 0.7em;
+  vertical-align: sub;
+  line-height: 0;
+}
+
+.equation sup {
+  font-size: 0.7em;
+  vertical-align: super;
+  line-height: 0;
 }
 
 .result {
-  font-family: 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 18px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 6px;
-  word-break: break-all;
+  word-break: break-word;
 }
 
 .result.ok {
