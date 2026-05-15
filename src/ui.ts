@@ -269,11 +269,6 @@ export function bootstrap(root: ParentNode = document): void {
   const resultBox = root.querySelector<HTMLElement>('#result-box');
   if (!input || !submit || !demoBox || !resultBox) return;
 
-  renderDemoButtons(demoBox, DEMO_EXAMPLES, (eq) => {
-    input.value = eq;
-    input.focus();
-  });
-
   const run = (): void => {
     const v = input.value.trim();
     if (!v) {
@@ -282,6 +277,14 @@ export function bootstrap(root: ParentNode = document): void {
     }
     renderResult(resultBox, tryBalance(v));
   };
+
+  renderDemoButtons(demoBox, DEMO_EXAMPLES, (eq) => {
+    input.value = eq;
+    run();
+    if (typeof resultBox.scrollIntoView === 'function') {
+      resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
 
   submit.addEventListener('click', run);
   input.addEventListener('keydown', (e) => {

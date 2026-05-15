@@ -112,12 +112,14 @@ describe('bootstrap', () => {
     `;
   });
 
-  it('wires up demo buttons that fill the input', () => {
+  it('clicking a demo button fills the input AND auto-balances', () => {
     bootstrap();
     const demoBtn = document.querySelector<HTMLButtonElement>('#demo-box button')!;
     demoBtn.click();
     const input = document.querySelector<HTMLInputElement>('#equation-input')!;
     expect(input.value).toBe(demoBtn.dataset.equation);
+    // Auto-balanced result should be present
+    expect(document.querySelector('#result-box .result.ok')).not.toBeNull();
   });
 
   it('clicking balance button shows structured result', () => {
